@@ -6,6 +6,7 @@ import { BranchesModule } from './branches/branches.module';
 import { TablesModule } from './tables/tables.module';
 import { MenusModule } from './menus/menus.module';
 import { ProductsModule } from './products/products.module';
+import { CustomersModule } from './customers/customers.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { ProductsModule } from './products/products.module';
     TablesModule,
     MenusModule,
     ProductsModule,
+    CustomersModule,
   ],
   controllers: [],
   providers: [],
