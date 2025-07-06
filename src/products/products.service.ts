@@ -6,7 +6,7 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 
 import * as pdfParse from 'pdf-parse';
-import { ProductCategory } from 'src/common/enums/product-category.enum';
+import { ProductCategory } from '../common/enums/product-category.enum';
 
 @Injectable()
 export class ProductsService {
