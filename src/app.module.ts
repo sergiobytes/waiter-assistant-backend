@@ -7,6 +7,8 @@ import { TablesModule } from './tables/tables.module';
 import { MenusModule } from './menus/menus.module';
 import { ProductsModule } from './products/products.module';
 import { CustomersModule } from './customers/customers.module';
+import { OrdersModule } from './orders/orders.module';
+import { OrderItemsModule } from './order-items/order-items.module';
 
 @Module({
   imports: [
@@ -17,6 +19,8 @@ import { CustomersModule } from './customers/customers.module';
     MenusModule,
     ProductsModule,
     CustomersModule,
+    OrdersModule,
+    OrderItemsModule,
   ],
   controllers: [],
   providers: [],
