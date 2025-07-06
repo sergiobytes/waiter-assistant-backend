@@ -31,12 +31,12 @@ export class CustomersController {
   }
 
   @Patch(':phone')
-  update(@Param('phone') id: string, @Body() dto: UpdateCustomerDto) {
-    return this.customersService.update(id, dto);
+  update(@Param('phone') phone: string, @Body() dto: UpdateCustomerDto) {
+    return this.customersService.update(phone, dto);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.customersService.remove(id);
+  @Delete(':phone')
+  remove(@Param('phone') phone: string) {
+    return this.customersService.remove(phone);
   }
 }
