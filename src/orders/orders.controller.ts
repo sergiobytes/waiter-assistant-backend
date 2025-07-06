@@ -45,6 +45,11 @@ export class OrdersController {
     return this.ordersService.close(id);
   }
 
+  @Patch(':id/mark-as-paid')
+  markAsPaid(@Param('id', ParseUUIDPipe) id: string) {
+    return this.ordersService.paid(id);
+  }
+
   @Delete(':id')
   remove(@Param('id', ParseUUIDPipe) id: string): Promise<Order> {
     return this.ordersService.remove(id);

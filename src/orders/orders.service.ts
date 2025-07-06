@@ -98,8 +98,22 @@ export class OrdersService {
       throw new BadRequestException('Cannot close an empty order');
     }
 
-    order.status = OrderStatus.PAID;
+    order.status = OrderStatus.CLOSED;
     order.closedAt = new Date();
+
+    return await this.orderRepo.save(order);
+  }
+
+  async paid(id: string): Promise<Order> {
+    const order = await this.findOne(id);
+
+    if (order.status !== OrderStatus.CLOSED) {
+      throw new BadRequestException(
+        'Order must be closed before marking as paid',
+      );
+    }
+
+    order.status = OrderStatus.PAID;
 
     return await this.orderRepo.save(order);
   }

@@ -3,5 +3,6 @@ export enum OrderStatus {
   IN_PROGRESS = 'IN_PROGRESS',
   COMPLETED = 'COMPLETED',
   CANCELLED = 'CANCELLED',
-  PAID = 'PAID', // nuevo estado
+  CLOSED = 'CLOSED',  // NUEVO ESTADO
+  PAID = 'PAID',
 }
