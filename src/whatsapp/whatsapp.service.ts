@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { TwilioService } from './twilio.service';
 import { CustomersService } from '../customers/customers.service';
 import { BranchesService } from '../branches/branches.service';
+import { AssistantService } from '../openai/assistant.service';
 
 @Injectable()
 export class WhatsappService {
@@ -11,6 +12,7 @@ export class WhatsappService {
     private readonly twilioService: TwilioService,
     private readonly customersService: CustomersService,
     private readonly branchesService: BranchesService,
+    private readonly assistantService: AssistantService,
   ) {}
 
   /**
@@ -48,8 +50,38 @@ export class WhatsappService {
 
     this.logger.log(`Customer processed: ${customer.name} (${customer.phone})`);
 
-    // Enviar mensaje de bienvenida automático si es un cliente nuevo
-    if (customer) {
+    // Procesar mensaje con OpenAI Assistant si el branch tiene uno configurado
+    let assistantResponse: string | null = null;
+    let threadId: string | null = null;
+
+    if (branch.assistantId) {
+      try {
+        this.logger.log(`Processing message with OpenAI Assistant: ${branch.assistantId}`);
+        
+        const assistantResult = await this.assistantService.processMessage(
+          branch.id,
+          customer.phone,
+          messageData.message
+        );
+
+        assistantResponse = assistantResult.response;
+        threadId = assistantResult.threadId;
+
+        // Enviar la respuesta del asistente
+        await this.sendMessage(customer.phone, assistantResponse, branch.phoneNumber);
+        
+        this.logger.log(`Assistant response sent to ${customer.name}`);
+        
+      } catch (error) {
+        this.logger.error('Error processing message with assistant:', error);
+        
+        // Enviar mensaje de fallback si hay error
+        const fallbackMessage = 'Gracias por tu mensaje. Un miembro de nuestro equipo te responderá pronto.';
+        await this.sendMessage(customer.phone, fallbackMessage, branch.phoneNumber);
+      }
+    } else {
+      // Si no hay asistente configurado, enviar mensaje de bienvenida estándar
+      this.logger.log(`No assistant configured for branch ${branch.name}, sending welcome message`);
       await this.sendWelcomeMessage(customer.phone, customer.name, branch.phoneNumber);
     }
 
@@ -57,6 +89,8 @@ export class WhatsappService {
       customer,
       message: messageData,
       branch,
+      assistantResponse,
+      threadId,
       processed: true,
     };
   }

@@ -12,6 +12,7 @@ import { OrderItemsModule } from './order-items/order-items.module';
 import { PaymentsModule } from './payments/payments.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
+import { OpenAIModule } from './openai/openai.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { WhatsappModule } from './whatsapp/whatsapp.module';
     PaymentsModule,
     WebhooksModule,
     WhatsappModule,
+    OpenAIModule,
   ],
   controllers: [],
   providers: [],
