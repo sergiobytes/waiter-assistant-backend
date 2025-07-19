@@ -24,7 +24,9 @@ export class TablesService {
   }
 
   async findOne(id: string): Promise<Table> {
-    // TODO: Si viene null debe lanzar NotFoundException
+    if (!id || id === undefined || id === null || id.trim() === '') {
+      throw new NotFoundException('Table ID is required');
+    }
     
     const table = await this.tableRepo.findOne({
       where: { id, isActive: true },
