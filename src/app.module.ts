@@ -11,6 +11,7 @@ import { OrdersModule } from './orders/orders.module';
 import { OrderItemsModule } from './order-items/order-items.module';
 import { PaymentsModule } from './payments/payments.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
+import { WhatsappModule } from './whatsapp/whatsapp.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { WebhooksModule } from './webhooks/webhooks.module';
     OrderItemsModule,
     PaymentsModule,
     WebhooksModule,
+    WhatsappModule,
   ],
   controllers: [],
   providers: [],

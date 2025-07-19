@@ -44,6 +44,13 @@ export class BranchesService {
     });
   }
 
+  async findByPhoneNumber(phoneNumber: string): Promise<Branch | null> {
+    return await this.branchRepo.findOne({
+      where: { phoneNumber, isActive: true },
+      relations: ['restaurant'],
+    });
+  }
+
   async update(id: string, dto: UpdateBranchDto): Promise<Branch> {
     const branch = await this.findOne(id);
     Object.assign(branch, dto);
