@@ -58,7 +58,7 @@ export class BranchesService {
 
   async generateQrForBranch(id: string): Promise<{ qrUrl: string }> {
     const branch = await this.findOne(id);
-    const targetUrl = `https://wa.me/${branch.phoneNumber}`;
+    const targetUrl = `https://wa.me/${branch.phoneNumber}?text=Hola!`;
 
     const finalImage = await createQr(targetUrl);
 
