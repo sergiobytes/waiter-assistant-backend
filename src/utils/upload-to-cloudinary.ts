@@ -1,4 +1,4 @@
-import cloudinary from '../config/cloudinary';
+import { cloudinaryConfig } from '../config/cloudinary';
 import { Readable } from 'stream';
 
 export const uploadToCloudinary = (
@@ -7,7 +7,7 @@ export const uploadToCloudinary = (
   fileName: string,
 ): Promise<string> => {
   return new Promise((resolve, reject) => {
-    const stream = cloudinary.uploader.upload_stream(
+    const stream = cloudinaryConfig.uploader.upload_stream(
       {
         folder,
         public_id: fileName,

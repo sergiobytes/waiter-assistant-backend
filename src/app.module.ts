@@ -9,6 +9,8 @@ import { ProductsModule } from './products/products.module';
 import { CustomersModule } from './customers/customers.module';
 import { OrdersModule } from './orders/orders.module';
 import { OrderItemsModule } from './order-items/order-items.module';
+import { PaymentsModule } from './payments/payments.module';
+import { WebhooksModule } from './webhooks/webhooks.module';
 
 @Module({
   imports: [
@@ -21,6 +23,8 @@ import { OrderItemsModule } from './order-items/order-items.module';
     CustomersModule,
     OrdersModule,
     OrderItemsModule,
+    PaymentsModule,
+    WebhooksModule,
   ],
   controllers: [],
   providers: [],

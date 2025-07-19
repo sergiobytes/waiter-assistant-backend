@@ -24,6 +24,8 @@ export class TablesService {
   }
 
   async findOne(id: string): Promise<Table> {
+    // TODO: Si viene null debe lanzar NotFoundException
+    
     const table = await this.tableRepo.findOne({
       where: { id, isActive: true },
       relations: ['branch'],

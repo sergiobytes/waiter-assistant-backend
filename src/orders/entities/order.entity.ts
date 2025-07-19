@@ -6,6 +6,7 @@ import { Customer } from '../../customers/entities/customer.entity';
 import { Column, Entity, ManyToOne, OneToMany } from 'typeorm';
 import { OrderItem } from '../../order-items/entities/order-item.entity';
 import { OrderType } from '../../common/enums/order-type.enum';
+import { Payment } from '../../payments/entities/payment.entity';
 
 @Entity()
 export class Order extends BaseEntity {
@@ -29,6 +30,9 @@ export class Order extends BaseEntity {
     eager: true,
   })
   items: OrderItem[];
+
+  @OneToMany(() => Payment, (payment) => payment.order)
+  payments?: Payment[];
 
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
   total: number;
