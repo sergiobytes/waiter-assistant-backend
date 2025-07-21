@@ -1,9 +1,14 @@
-import { Injectable, Logger, BadRequestException, Inject, forwardRef } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  BadRequestException,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { OpenAIService } from './openai.service';
 import { BranchesService } from '../branches/branches.service';
 import { MenusService } from '../menus/menus.service';
 import { ProductsService } from '../products/products.service';
-import { OrdersService } from '../orders/orders.service';
 import { CustomersService } from '../customers/customers.service';
 
 @Injectable()
@@ -16,7 +21,6 @@ export class AssistantService {
     private readonly branchesService: BranchesService,
     private readonly menusService: MenusService,
     private readonly productsService: ProductsService,
-    private readonly ordersService: OrdersService,
     private readonly customersService: CustomersService,
   ) {}
 
@@ -27,21 +31,25 @@ export class AssistantService {
     branchId: string,
     customerPhone: string,
     message: string,
-    threadId?: string
+    threadId?: string,
   ): Promise<{ response: string; threadId: string }> {
     try {
       // 1. Obtener el branch y validar que tenga assistantId
       const branch = await this.branchesService.findOne(branchId);
-      
+
       if (!branch.assistantId) {
-        throw new BadRequestException(`Branch '${branch.name}' does not have an assistant configured`);
+        throw new BadRequestException(
+          `Branch '${branch.name}' does not have an assistant configured`,
+        );
       }
 
-      this.logger.log(`Processing message for branch: ${branch.name} with assistant: ${branch.assistantId}`);
+      this.logger.log(
+        `Processing message for branch: ${branch.name} with assistant: ${branch.assistantId}`,
+      );
 
       // 2. Obtener información del cliente
       const customer = await this.customersService.findByPhone(customerPhone);
-      
+
       if (!customer) {
         throw new BadRequestException('Customer not found');
       }
@@ -50,7 +58,9 @@ export class AssistantService {
       let currentThreadId = threadId;
       if (!currentThreadId) {
         currentThreadId = await this.openAIService.createThread();
-        this.logger.log(`Created new thread for customer ${customer.name}: ${currentThreadId}`);
+        this.logger.log(
+          `Created new thread for customer ${customer.name}: ${currentThreadId}`,
+        );
       }
 
       // 4. Preparar contexto del cliente y branch
@@ -66,7 +76,7 @@ export class AssistantService {
         },
         restaurant: {
           name: branch.restaurant.name,
-        }
+        },
       };
 
       // 5. Enviar mensaje al asistente
@@ -74,27 +84,29 @@ export class AssistantService {
         branch.assistantId,
         currentThreadId,
         message,
-        customerContext
+        customerContext,
       );
 
-      this.logger.log(`Assistant response generated for customer ${customer.name}`);
+      this.logger.log(
+        `Assistant response generated for customer ${customer.name}`,
+      );
 
       return {
         response,
-        threadId: currentThreadId
+        threadId: currentThreadId,
       };
-
     } catch (error) {
       this.logger.error('Error processing message with assistant:', error);
-      
+
       if (error instanceof BadRequestException) {
         throw error;
       }
-      
+
       // Respuesta de fallback si hay error con OpenAI
       return {
-        response: 'Lo siento, estoy teniendo problemas técnicos en este momento. ¿Puedes intentar de nuevo en unos minutos?',
-        threadId: threadId || 'error'
+        response:
+          'Lo siento, estoy teniendo problemas técnicos en este momento. ¿Puedes intentar de nuevo en unos minutos?',
+        threadId: threadId || 'error',
       };
     }
   }
@@ -105,33 +117,33 @@ export class AssistantService {
   async getMenu(branchId: string): Promise<any> {
     try {
       const menus = await this.menusService.findByBranch(branchId);
-      
+
       const menuData: any[] = [];
-      
+
       for (const menu of menus) {
         const products = await this.productsService.findByMenu(menu.id);
-        
+
         menuData.push({
           menuName: menu.name,
-          products: products.map(product => ({
+          products: products.map((product) => ({
             id: product.id,
             name: product.name,
             description: product.description,
             price: product.price,
             category: product.category,
-          }))
+          })),
         });
       }
 
       return {
         status: 'success',
-        data: menuData
+        data: menuData,
       };
     } catch (error) {
       this.logger.error('Error getting menu:', error);
       return {
         status: 'error',
-        message: 'No se pudo obtener el menú'
+        message: 'No se pudo obtener el menú',
       };
     }
   }
@@ -139,26 +151,30 @@ export class AssistantService {
   /**
    * Crea una nueva orden
    */
-  async createOrder(customerPhone: string, branchId: string, tableNumber?: string): Promise<any> {
+  async createOrder(
+    customerPhone: string,
+    branchId: string,
+    tableNumber?: string,
+  ): Promise<any> {
     try {
       const customer = await this.customersService.findByPhone(customerPhone);
-      
+
       if (!customer) {
         return {
           status: 'error',
-          message: 'Cliente no encontrado'
+          message: 'Cliente no encontrado',
         };
       }
 
       // Aquí implementarías la lógica para crear la orden
       // Por ahora, solo retornamos un placeholder
-      
+
       const orderData = {
         customerId: customer.id,
         branchId: branchId,
         tableNumber: tableNumber,
         status: 'PENDING',
-        items: []
+        items: [],
       };
 
       this.logger.log(`Order creation requested for customer ${customer.name}`);
@@ -166,13 +182,13 @@ export class AssistantService {
       return {
         status: 'success',
         message: 'Orden creada exitosamente',
-        data: orderData
+        data: orderData,
       };
     } catch (error) {
       this.logger.error('Error creating order:', error);
       return {
         status: 'error',
-        message: 'No se pudo crear la orden'
+        message: 'No se pudo crear la orden',
       };
     }
   }
