@@ -54,12 +54,16 @@ export class AssistantService {
         throw new BadRequestException('Customer not found');
       }
 
-      // 3. Crear un thread si no existe
+      // 3. Usar el thread existente o crear uno nuevo
       let currentThreadId = threadId;
       if (!currentThreadId) {
         currentThreadId = await this.openAIService.createThread();
         this.logger.log(
           `Created new thread for customer ${customer.name}: ${currentThreadId}`,
+        );
+      } else {
+        this.logger.log(
+          `Using existing thread for customer ${customer.name}: ${currentThreadId}`,
         );
       }
 

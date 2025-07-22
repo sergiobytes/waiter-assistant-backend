@@ -8,4 +8,8 @@ export class CreateCustomerDto {
   @IsString()
   @IsNotEmpty()
   phone?: string;
+
+  @IsString()
+  @IsNotEmpty()
+  threadId?: string;
 }

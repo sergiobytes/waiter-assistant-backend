@@ -23,12 +23,14 @@ export class WhatsappService {
 
     // Procesar los datos del webhook
     const messageData = this.twilioService.processIncomingMessage(webhookData);
-    
-    this.logger.log(`Message from ${messageData.from} to ${messageData.to}: ${messageData.message}`);
+
+    this.logger.log(
+      `Message from ${messageData.from} to ${messageData.to}: ${messageData.message}`,
+    );
 
     // Identificar el branch basado en el número de destino (To)
     const branch = await this.branchesService.findByPhoneNumber(
-      messageData.to.replace('whatsapp:', '')
+      messageData.to.replace('whatsapp:', ''),
     );
 
     if (!branch) {
@@ -40,12 +42,14 @@ export class WhatsappService {
       };
     }
 
-    this.logger.log(`Message directed to branch: ${branch.name} (${branch.phoneNumber})`);
+    this.logger.log(
+      `Message directed to branch: ${branch.name} (${branch.phoneNumber})`,
+    );
 
     // Verificar si el usuario existe en la base de datos
     const customer = await this.findOrCreateCustomer(
       messageData.from,
-      messageData.profileName
+      messageData.profileName,
     );
 
     this.logger.log(`Customer processed: ${customer.name} (${customer.phone})`);
@@ -56,33 +60,60 @@ export class WhatsappService {
 
     if (branch.assistantId) {
       try {
-        this.logger.log(`Processing message with OpenAI Assistant: ${branch.assistantId}`);
-        
+        this.logger.log(
+          `Processing message with OpenAI Assistant: ${branch.assistantId}`,
+        );
+
+        // Usar el threadId existente del cliente
         const assistantResult = await this.assistantService.processMessage(
           branch.id,
           customer.phone,
-          messageData.message
+          messageData.message,
+          customer.threadId, // Pasar el threadId existente
         );
 
         assistantResponse = assistantResult.response;
         threadId = assistantResult.threadId;
 
+        // Si el cliente no tenía threadId o cambió, actualizarlo
+        if (!customer.threadId || customer.threadId !== threadId) {
+          await this.customersService.update(customer.id, { threadId });
+          customer.threadId = threadId; // Actualizar el objeto en memoria
+          this.logger.log(
+            `ThreadId updated for customer ${customer.name}: ${threadId}`,
+          );
+        }
+
         // Enviar la respuesta del asistente
-        await this.sendMessage(customer.phone, assistantResponse, branch.phoneNumber);
-        
+        await this.sendMessage(
+          customer.phone,
+          assistantResponse,
+          branch.phoneNumber,
+        );
+
         this.logger.log(`Assistant response sent to ${customer.name}`);
-        
       } catch (error) {
         this.logger.error('Error processing message with assistant:', error);
-        
+
         // Enviar mensaje de fallback si hay error
-        const fallbackMessage = 'Gracias por tu mensaje. Un miembro de nuestro equipo te responderá pronto.';
-        await this.sendMessage(customer.phone, fallbackMessage, branch.phoneNumber);
+        const fallbackMessage =
+          'Gracias por tu mensaje. Un miembro de nuestro equipo te responderá pronto.';
+        await this.sendMessage(
+          customer.phone,
+          fallbackMessage,
+          branch.phoneNumber,
+        );
       }
     } else {
       // Si no hay asistente configurado, enviar mensaje de bienvenida estándar
-      this.logger.log(`No assistant configured for branch ${branch.name}, sending welcome message`);
-      await this.sendWelcomeMessage(customer.phone, customer.name, branch.phoneNumber);
+      this.logger.log(
+        `No assistant configured for branch ${branch.name}, sending welcome message`,
+      );
+      await this.sendWelcomeMessage(
+        customer.phone,
+        customer.name,
+        branch.phoneNumber,
+      );
     }
 
     return {
@@ -102,7 +133,7 @@ export class WhatsappService {
     try {
       // Intentar encontrar el cliente existente
       const existingCustomer = await this.customersService.findByPhone(phone);
-      
+
       if (existingCustomer) {
         this.logger.log(`Customer found: ${existingCustomer.name}`);
         return existingCustomer;
@@ -114,13 +145,15 @@ export class WhatsappService {
 
     // Crear nuevo cliente
     const customerName = profileName || `Cliente ${phone.slice(-4)}`;
-    
+
     const newCustomer = await this.customersService.create({
       name: customerName,
       phone: phone,
     });
 
-    this.logger.log(`New customer created: ${newCustomer.name} (${newCustomer.phone})`);
+    this.logger.log(
+      `New customer created: ${newCustomer.name} (${newCustomer.phone})`,
+    );
     return newCustomer;
   }
 
@@ -129,8 +162,14 @@ export class WhatsappService {
    */
   async sendMessage(to: string, message: string, fromBranchPhone: string) {
     try {
-      const response = await this.twilioService.sendWhatsAppMessage(to, message, fromBranchPhone);
-      this.logger.log(`Message sent successfully to ${to} from branch ${fromBranchPhone}`);
+      const response = await this.twilioService.sendWhatsAppMessage(
+        to,
+        message,
+        fromBranchPhone,
+      );
+      this.logger.log(
+        `Message sent successfully to ${to} from branch ${fromBranchPhone}`,
+      );
       return response;
     } catch (error) {
       this.logger.error(`Failed to send message to ${to}:`, error);
@@ -141,7 +180,11 @@ export class WhatsappService {
   /**
    * Envía un mensaje de bienvenida a un nuevo cliente
    */
-  async sendWelcomeMessage(customerPhone: string, customerName: string, branchPhone: string) {
+  async sendWelcomeMessage(
+    customerPhone: string,
+    customerName: string,
+    branchPhone: string,
+  ) {
     const welcomeMessage = `¡Hola ${customerName}! 👋 
 
 Bienvenido a nuestro servicio de WhatsApp. 
