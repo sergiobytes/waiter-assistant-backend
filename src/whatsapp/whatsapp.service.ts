@@ -1,8 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { TwilioService } from './twilio.service';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { TwilioService } from './services/twilio.service';
 import { CustomersService } from '../customers/customers.service';
 import { BranchesService } from '../branches/branches.service';
 import { AssistantService } from '../openai/assistant.service';
+import { TwilioMessage } from './classes/twilio-message.class';
 
 @Injectable()
 export class WhatsappService {
@@ -14,6 +15,60 @@ export class WhatsappService {
     private readonly branchesService: BranchesService,
     private readonly assistantService: AssistantService,
   ) {}
+
+  async handleTwilioWebhook(body: any) {
+    this.logger.log('Received Twilio WhatsApp webhook');
+    this.logger.log('Webhook data:', JSON.stringify(body, null, 2));
+
+    // TODO: Descomentar cuando tengas la URL pública configurada
+    // Validar que el webhook viene de Twilio
+    /*
+      const isValid = this.twilioService.validateWebhook(
+        signature,
+        request.url,
+        body
+      );
+  
+      if (!isValid) {
+        this.logger.error('Invalid Twilio webhook signature');
+        throw new BadRequestException('Invalid webhook signature');
+      }
+      */
+
+    try {
+      // Procesar el mensaje entrante
+      const result = await this.processIncomingMessage(body);
+
+      this.logger.log('Message processed successfully');
+
+      return { status: 'success', processed: true, result };
+    } catch (error) {
+      this.logger.error('Error processing WhatsApp webhook:', error);
+      throw error;
+    }
+  }
+
+  async handleMessageSending(body: TwilioMessage) {
+    const { to, message, branchPhone } = body;
+
+    if (!to || !message || !branchPhone) {
+      throw new BadRequestException(
+        'Missing required fields: to, message, branchPhone',
+      );
+    }
+
+    try {
+      const result = await this.sendMessage(to, message, branchPhone);
+      return {
+        success: true,
+        messageSid: result.sid,
+        to: to,
+      };
+    } catch (error) {
+      this.logger.error('Error sending WhatsApp message:', error);
+      throw error;
+    }
+  }
 
   /**
    * Procesa un mensaje entrante de WhatsApp

@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { twilioConfig } from '../config/twilio.config';
+import { twilioConfig } from '../../config/twilio.config';
 import * as twilio from 'twilio';
 
 @Injectable()
