@@ -1,7 +1,7 @@
 import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import OpenAI from 'openai';
-import { openAIConfig } from './openai.config';
-import { AssistantService } from './assistant.service';
+import { openAIConfig } from '../../config/openai.config';
+import { AssistantService } from '../assistant.service';
 
 @Injectable()
 export class OpenAIService {
@@ -10,7 +10,7 @@ export class OpenAIService {
 
   constructor(
     @Inject(forwardRef(() => AssistantService))
-    private readonly assistantService: AssistantService
+    private readonly assistantService: AssistantService,
   ) {
     if (!openAIConfig.apiKey) {
       this.logger.warn('OpenAI API key not configured');
@@ -44,7 +44,7 @@ export class OpenAIService {
     assistantId: string,
     threadId: string,
     message: string,
-    customerContext?: any
+    customerContext?: any,
   ): Promise<string> {
     if (!this.openai) {
       throw new Error('OpenAI not configured');
@@ -60,7 +60,7 @@ export class OpenAIService {
       // 2. Crear un run con el asistente
       const run = await this.openai.beta.threads.runs.create(threadId, {
         assistant_id: assistantId,
-        additional_instructions: customerContext 
+        additional_instructions: customerContext
           ? `Contexto del cliente: ${JSON.stringify(customerContext)}`
           : undefined,
       });
@@ -69,9 +69,12 @@ export class OpenAIService {
       let runStatus = await this.openai.beta.threads.runs.retrieve(run.id, {
         thread_id: threadId,
       });
-      
-      while (runStatus.status === 'in_progress' || runStatus.status === 'queued') {
-        await new Promise(resolve => setTimeout(resolve, 1000));
+
+      while (
+        runStatus.status === 'in_progress' ||
+        runStatus.status === 'queued'
+      ) {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
         runStatus = await this.openai.beta.threads.runs.retrieve(run.id, {
           thread_id: threadId,
         });
@@ -81,7 +84,7 @@ export class OpenAIService {
         // 4. Obtener los mensajes del thread
         const messages = await this.openai.beta.threads.messages.list(threadId);
         const lastMessage = messages.data[0];
-        
+
         if (lastMessage.role === 'assistant') {
           const content = lastMessage.content[0];
           if (content.type === 'text') {
@@ -107,19 +110,25 @@ export class OpenAIService {
   /**
    * Maneja las llamadas a funciones del asistente
    */
-  private async handleFunctionCalls(threadId: string, runId: string, runStatus: any): Promise<string> {
+  private async handleFunctionCalls(
+    threadId: string,
+    runId: string,
+    runStatus: any,
+  ): Promise<string> {
     const toolCalls = runStatus.required_action.submit_tool_outputs.tool_calls;
     const toolOutputs: any[] = [];
 
     for (const toolCall of toolCalls) {
       const functionName = toolCall.function.name;
       const functionArgs = JSON.parse(toolCall.function.arguments);
-      
-      this.logger.log(`Function call: ${functionName} with args: ${JSON.stringify(functionArgs)}`);
-      
+
+      this.logger.log(
+        `Function call: ${functionName} with args: ${JSON.stringify(functionArgs)}`,
+      );
+
       // Aquí es donde llamaremos a los servicios correspondientes
       const output = await this.executeFunctionCall(functionName, functionArgs);
-      
+
       toolOutputs.push({
         tool_call_id: toolCall.id,
         output: JSON.stringify(output),
@@ -136,9 +145,12 @@ export class OpenAIService {
     let runStatus2 = await this.openai.beta.threads.runs.retrieve(runId, {
       thread_id: threadId,
     });
-    
-    while (runStatus2.status === 'in_progress' || runStatus2.status === 'queued') {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+
+    while (
+      runStatus2.status === 'in_progress' ||
+      runStatus2.status === 'queued'
+    ) {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       runStatus2 = await this.openai.beta.threads.runs.retrieve(runId, {
         thread_id: threadId,
       });
@@ -147,7 +159,7 @@ export class OpenAIService {
     if (runStatus2.status === 'completed') {
       const messages = await this.openai.beta.threads.messages.list(threadId);
       const lastMessage = messages.data[0];
-      
+
       if (lastMessage.role === 'assistant') {
         const content = lastMessage.content[0];
         if (content.type === 'text') {
@@ -163,30 +175,48 @@ export class OpenAIService {
    * Ejecuta las funciones llamadas por el asistente
    * Aquí es donde integramos con los servicios de la aplicación
    */
-  private async executeFunctionCall(functionName: string, args: any): Promise<any> {
+  private async executeFunctionCall(
+    functionName: string,
+    args: any,
+  ): Promise<any> {
     this.logger.log(`Executing function: ${functionName}`);
-    
+
     try {
       switch (functionName) {
         case 'get_menu':
           // Retorna información del menú
           return await this.assistantService.getMenu(args.branchId);
-        
+
         case 'create_order':
           // Crea una nueva orden
-          return await this.assistantService.createOrder(args.customerPhone, args.branchId, args.tableNumber);
-        
+          return await this.assistantService.createOrder(
+            args.customerPhone,
+            args.branchId,
+            args.tableNumber,
+          );
+
         case 'get_order_status':
           // Consulta el estado de una orden
-          return { status: 'success', message: 'Función get_order_status ejecutada', data: args };
-        
+          return {
+            status: 'success',
+            message: 'Función get_order_status ejecutada',
+            data: args,
+          };
+
         case 'add_item_to_order':
           // Agrega items a una orden
-          return { status: 'success', message: 'Función add_item_to_order ejecutada', data: args };
-        
+          return {
+            status: 'success',
+            message: 'Función add_item_to_order ejecutada',
+            data: args,
+          };
+
         default:
           this.logger.warn(`Unknown function: ${functionName}`);
-          return { status: 'error', message: `Función ${functionName} no reconocida` };
+          return {
+            status: 'error',
+            message: `Función ${functionName} no reconocida`,
+          };
       }
     } catch (error) {
       this.logger.error(`Error executing function ${functionName}:`, error);

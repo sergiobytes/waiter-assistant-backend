@@ -5,7 +5,7 @@ import {
   Inject,
   forwardRef,
 } from '@nestjs/common';
-import { OpenAIService } from './openai.service';
+import { OpenAIService } from './services/openai.service';
 import { BranchesService } from '../branches/branches.service';
 import { MenusService } from '../menus/menus.service';
 import { ProductsService } from '../products/products.service';

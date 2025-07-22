@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { OpenAIService } from './openai.service';
+import { OpenAIService } from './services/openai.service';
 import { AssistantService } from './assistant.service';
 import { BranchesModule } from '../branches/branches.module';
 import { MenusModule } from '../menus/menus.module';

@@ -8,7 +8,10 @@ export class StripeService {
   private stripe: Stripe;
 
   constructor() {
-    if (paymentConfig.gateways.stripe.enabled && paymentConfig.gateways.stripe.secretKey) {
+    if (
+      paymentConfig.gateways.stripe.enabled &&
+      paymentConfig.gateways.stripe.secretKey
+    ) {
       this.stripe = new Stripe(paymentConfig.gateways.stripe.secretKey, {
         apiVersion: '2025-06-30.basil',
       });
@@ -32,7 +35,7 @@ export class StripeService {
         currency: 'mxn',
         metadata: {
           orderId,
-          ...metadata
+          ...metadata,
         },
         payment_method_types: ['card', 'oxxo'],
       });
@@ -55,7 +58,7 @@ export class StripeService {
     try {
       const paymentIntent = await this.stripe.paymentIntents.confirm(
         paymentIntentId,
-        { payment_method: paymentMethodId }
+        { payment_method: paymentMethodId },
       );
 
       return paymentIntent;
@@ -77,7 +80,7 @@ export class StripeService {
       const refund = await this.stripe.refunds.create({
         charge: chargeId,
         amount: amount ? Math.round(amount * 100) : undefined,
-        reason: (reason as any) || 'requested_by_customer'
+        reason: (reason as any) || 'requested_by_customer',
       });
 
       return refund;
@@ -99,7 +102,7 @@ export class StripeService {
       return this.stripe.webhooks.constructEvent(
         payload,
         signature,
-        paymentConfig.gateways.stripe.webhookSecret!
+        paymentConfig.gateways.stripe.webhookSecret!,
       );
     } catch (error) {
       this.logger.error('Error verifying Stripe webhook', error);
@@ -127,14 +130,14 @@ export class StripeService {
    * Crea una sesión de checkout en Stripe
    */
   async createCheckoutSession(
-    amount: number, 
-    orderId: string, 
+    amount: number,
+    orderId: string,
     options?: {
       successUrl?: string;
       cancelUrl?: string;
       description?: string;
       customerPhone?: string;
-    }
+    },
   ) {
     if (!this.stripe) {
       throw new Error('Stripe not configured');
@@ -156,13 +159,17 @@ export class StripeService {
           },
         ],
         mode: 'payment',
-        success_url: options?.successUrl || `${process.env.FRONTEND_URL || 'http://localhost:3000'}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: options?.cancelUrl || `${process.env.FRONTEND_URL || 'http://localhost:3000'}/payment/cancel`,
+        success_url:
+          options?.successUrl ||
+          `${process.env.FRONTEND_URL || 'http://localhost:3000'}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url:
+          options?.cancelUrl ||
+          `${process.env.FRONTEND_URL || 'http://localhost:3000'}/payment/cancel`,
         metadata: {
           orderId,
           customerPhone: options?.customerPhone || '',
         },
-        expires_at: Math.floor(Date.now() / 1000) + (30 * 60), // 30 minutos
+        expires_at: Math.floor(Date.now() / 1000) + 30 * 60, // 30 minutos
       });
 
       return session;
