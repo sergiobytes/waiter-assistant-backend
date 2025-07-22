@@ -7,6 +7,7 @@ import { UpdateProductDto } from './dto/update-product.dto';
 
 import * as pdfParse from 'pdf-parse';
 import { ProductCategory } from '../common/enums/product-category.enum';
+import { normalizeText } from '../utils/normalize-text';
 
 @Injectable()
 export class ProductsService {
@@ -62,17 +63,17 @@ export class ProductsService {
 
     const lines = data.text
       .split('\n')
-      .map((line) => line.trim())
+      .map((line) => normalizeText(line))
       .filter(Boolean);
 
     const productsToCreate: CreateProductDto[] = [];
 
     lines.forEach((line) => {
-      const match = line.match(/^(.*?)\s+(\d+[.,]?\d{0,2})$/);
+      const match = line.match(/^(.*?)\s+\$?(\d+(?:\.\d{1,2})?)\s*$/);
 
       if (match) {
         const name = match[1].trim();
-        const price = parseFloat(match[2].replace(',', '.'));
+        const price = parseFloat(match[2]);
 
         productsToCreate.push({
           name,
