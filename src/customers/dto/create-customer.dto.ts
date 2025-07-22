@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateCustomerDto {
   @IsString()
@@ -10,6 +10,6 @@ export class CreateCustomerDto {
   phone?: string;
 
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   threadId?: string;
 }
