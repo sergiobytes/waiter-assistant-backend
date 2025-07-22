@@ -132,7 +132,7 @@ export class WhatsappService {
 
         // Si el cliente no tenía threadId o cambió, actualizarlo
         if (!customer.threadId || customer.threadId !== threadId) {
-          await this.customersService.update(customer.id, { threadId });
+          await this.customersService.update(customer.phone, { threadId });
           customer.threadId = threadId; // Actualizar el objeto en memoria
           this.logger.log(
             `ThreadId updated for customer ${customer.name}: ${threadId}`,
