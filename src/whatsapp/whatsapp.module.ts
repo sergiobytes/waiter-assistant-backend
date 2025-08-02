@@ -5,9 +5,10 @@ import { TwilioService } from './services/twilio.service';
 import { CustomersModule } from '../customers/customers.module';
 import { BranchesModule } from '../branches/branches.module';
 import { OpenAIModule } from '../openai/openai.module';
+import { TablesModule } from '../tables/tables.module';
 
 @Module({
-  imports: [CustomersModule, BranchesModule, OpenAIModule],
+  imports: [CustomersModule, BranchesModule, OpenAIModule, TablesModule],
   controllers: [WhatsappController],
   providers: [WhatsappService, TwilioService],
   exports: [WhatsappService, TwilioService],

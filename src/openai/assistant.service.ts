@@ -32,6 +32,7 @@ export class AssistantService {
     customerPhone: string,
     message: string,
     threadId?: string,
+    tableInfo?: any,
   ): Promise<{ response: string; threadId: string }> {
     try {
       // 1. Obtener el branch y validar que tenga assistantId
@@ -83,11 +84,21 @@ export class AssistantService {
         },
       };
 
-      // 5. Enviar mensaje al asistente
+      let enhancedMessage = message;
+
+      // 5. Agregar información de la mesa si está disponible
+      if (tableInfo?.hasTableMention) {
+        const tableContext = this.buildTableContext(tableInfo);
+        enhancedMessage += `${message}\n\n[CONTEXT: ${tableContext}]`;
+
+        this.logger.log(`Enhanced message with table context: ${tableContext}`);
+      }
+
+      // 6. Enviar mensaje al asistente
       const response = await this.openAIService.sendMessageToAssistant(
         branch.assistantId,
         currentThreadId,
-        message,
+        enhancedMessage,
         customerContext,
       );
 
@@ -195,5 +206,45 @@ export class AssistantService {
         message: 'No se pudo crear la orden',
       };
     }
+  }
+
+  buildTableContext(tableInfo: any): string {
+    if (tableInfo.error) {
+      switch (tableInfo.error) {
+        case 'NO_TABLES_FOUND':
+          return `ERROR: No tables are configured for this branch. Customer cannot place table orders.`;
+
+        case 'TABLE_NOT_FOUND':
+          const availableTables = tableInfo.tables
+            .map((t) => `${t.name}(${t.capacity} seats, ${t.status})`)
+            .join(', ');
+          return `ERROR: Table ${tableInfo.detectedTableNumber} not found. Available tables: ${availableTables}`;
+
+        case 'TABLE_NOT_AVAILABLE':
+          const alternativeTables = tableInfo.availableTablesForOrder
+            .map((t) => `${t.name}(${t.capacity} seats, ${t.status})`)
+            .join(', ');
+          return `ERROR: Table ${tableInfo.detectedTableNumber} is ${tableInfo.validatedTable.status}. Alternative tables: ${alternativeTables}`;
+      }
+    }
+
+    // Contexto normal si no hay errores
+    let context = `Customer mentioned table. `;
+
+    if (tableInfo.detectedTableNumber) {
+      context += `Detected table number: ${tableInfo.detectedTableNumber}. `;
+
+      if (tableInfo.validatedTable) {
+        context += `${tableInfo.tableStatus}. `;
+      }
+    }
+
+    const availableTablesText = tableInfo.availableTablesForOrder
+      .map((t) => `${t.name}(${t.capacity} seats, ${t.status})`)
+      .join(', ');
+
+    context += `Tables available for ordering: ${availableTablesText}`;
+
+    return context;
   }
 }

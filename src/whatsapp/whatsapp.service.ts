@@ -4,6 +4,7 @@ import { CustomersService } from '../customers/customers.service';
 import { BranchesService } from '../branches/branches.service';
 import { AssistantService } from '../openai/assistant.service';
 import { TwilioMessage } from './classes/twilio-message.class';
+import { TablesService } from '../tables/tables.service';
 
 @Injectable()
 export class WhatsappService {
@@ -14,6 +15,7 @@ export class WhatsappService {
     private readonly customersService: CustomersService,
     private readonly branchesService: BranchesService,
     private readonly assistantService: AssistantService,
+    private readonly tableService: TablesService,
   ) {}
 
   async handleTwilioWebhook(body: any) {
@@ -101,6 +103,11 @@ export class WhatsappService {
       `Message directed to branch: ${branch.name} (${branch.phoneNumber})`,
     );
 
+    const tableInfo = await this.tableService.processTableMention(
+      messageData.message,
+      branch.id,
+    );
+
     // Verificar si el usuario existe en la base de datos
     const customer = await this.findOrCreateCustomer(
       messageData.from,
@@ -124,7 +131,8 @@ export class WhatsappService {
           branch.id,
           customer.phone,
           messageData.message,
-          customer.threadId, // Pasar el threadId existente
+          customer.threadId,
+          tableInfo, // Pasar el threadId existente
         );
 
         assistantResponse = assistantResult.response;
@@ -177,6 +185,7 @@ export class WhatsappService {
       branch,
       assistantResponse,
       threadId,
+      tableInfo,
       processed: true,
     };
   }
