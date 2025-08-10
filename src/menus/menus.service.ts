@@ -34,8 +34,8 @@ export class MenusService {
     return menu;
   }
 
-  async findByBranch(branchId: string): Promise<Menu[]> {
-    return await this.menuRepo.find({ where: { branchId, isActive: true } });
+  async findByBranch(branchId: string): Promise<Menu | null> {
+    return await this.menuRepo.findOne({ where: { branchId, isActive: true } });
   }
 
   async update(id: string, dto: UpdateMenuDto): Promise<Menu> {

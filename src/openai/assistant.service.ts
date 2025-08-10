@@ -10,6 +10,13 @@ import { BranchesService } from '../branches/branches.service';
 import { MenusService } from '../menus/menus.service';
 import { ProductsService } from '../products/products.service';
 import { CustomersService } from '../customers/customers.service';
+import { OrderType } from '../common/enums/order-type.enum';
+import { TablesService } from '../tables/tables.service';
+
+import {
+  OrderConfirmationData,
+  OrderProcessingService,
+} from '../order-processing/order-processing.service';
 
 @Injectable()
 export class AssistantService {
@@ -22,6 +29,8 @@ export class AssistantService {
     private readonly menusService: MenusService,
     private readonly productsService: ProductsService,
     private readonly customersService: CustomersService,
+    private readonly orderProcessingService: OrderProcessingService,
+    private readonly tableService: TablesService,
   ) {}
 
   /**
@@ -95,7 +104,7 @@ export class AssistantService {
       }
 
       // 6. Enviar mensaje al asistente
-      const response = await this.openAIService.sendMessageToAssistant(
+      let response = await this.openAIService.sendMessageToAssistant(
         branch.assistantId,
         currentThreadId,
         enhancedMessage,
@@ -105,6 +114,46 @@ export class AssistantService {
       this.logger.log(
         `Assistant response generated for customer ${customer.name}`,
       );
+
+      const orderConfirmation = await this.detectOrderConfirmation(
+        enhancedMessage,
+        response,
+      );
+      
+      if (!tableInfo.hasTableMention) {
+        tableInfo = await this.tableService.processTableMention(
+          response,
+          branch.id,
+        );
+      }
+
+      if (orderConfirmation.isConfirmation && orderConfirmation.orderData) {
+        this.logger.log(
+          `Order confirmation detected for customer ${customerPhone}`,
+        );
+
+        // Procesar la orden en base de datos
+        const orderResult = await this.processConfirmedOrder(
+          customerPhone,
+          branchId,
+          orderConfirmation.orderData,
+          tableInfo,
+          currentThreadId,
+        );
+
+        if (orderResult.success) {
+          // Sobrescribir respuesta del assistant con confirmación de orden
+          response = orderResult.message;
+          this.logger.log(
+            `Order processed successfully: ${orderResult.order?.id}`,
+          );
+        } else {
+          // Mantener respuesta del assistant pero loggear error
+          this.logger.error(
+            `Order processing failed: ${orderResult.errors?.join(', ')}`,
+          );
+        }
+      }
 
       return {
         response,
@@ -131,24 +180,22 @@ export class AssistantService {
    */
   async getMenu(branchId: string): Promise<any> {
     try {
-      const menus = await this.menusService.findByBranch(branchId);
+      const menu = await this.menusService.findByBranch(branchId);
 
       const menuData: any[] = [];
 
-      for (const menu of menus) {
-        const products = await this.productsService.findByMenu(menu.id);
+      const products = await this.productsService.findByMenu(menu!.id);
 
-        menuData.push({
-          menuName: menu.name,
-          products: products.map((product) => ({
-            id: product.id,
-            name: product.name,
-            description: product.description,
-            price: product.price,
-            category: product.category,
-          })),
-        });
-      }
+      menuData.push({
+        menuName: menu!.name,
+        products: products.map((product) => ({
+          id: product.id,
+          name: product.name,
+          description: product.description,
+          price: product.price,
+          category: product.category,
+        })),
+      });
 
       return {
         status: 'success',
@@ -246,5 +293,196 @@ export class AssistantService {
     context += `Tables available for ordering: ${availableTablesText}`;
 
     return context;
+  }
+
+  /**
+   * **NUEVO: Detectar si el mensaje es una confirmación de orden**
+   */
+  private async detectOrderConfirmation(
+    userMessage: string,
+    assistantResponse: string,
+  ): Promise<{
+    isConfirmation: boolean;
+    orderData?: any;
+  }> {
+    // Palabras clave que indican confirmación
+    const confirmationKeywords = ['si', 'sí'];
+
+    const messageNormalized = userMessage.toLowerCase();
+    const messageWords = messageNormalized.split(/\s+/);
+    const hasConfirmationKeyword = confirmationKeywords.some((keyword) =>
+      messageWords.includes(keyword.toLowerCase()),
+    );
+
+    if (!hasConfirmationKeyword) {
+      return { isConfirmation: false };
+    }
+
+    // **NUEVO: Extraer datos de orden de la respuesta del assistant**
+    const orderData = this.extractOrderDataFromResponse(assistantResponse);
+
+    if (!orderData || !orderData.items || orderData.items.length === 0) {
+      this.logger.warn(
+        'Confirmation detected but no order data found in assistant response',
+      );
+      return { isConfirmation: false };
+    }
+
+    return {
+      isConfirmation: true,
+      orderData,
+    };
+  }
+
+  /**
+   * **NUEVO: Extraer datos de orden de la respuesta del assistant**
+   */
+  private extractOrderDataFromResponse(assistantResponse: string): any | null {
+    try {
+      // El assistant debería estructurar su respuesta con los datos de la orden
+      // Buscamos patrones como:
+      // "Tu pedido: 1. Pizza Margarita x2 - $25.00"
+
+      const items: any[] = [];
+      const lines = assistantResponse.split('\n');
+
+      for (const line of lines) {
+        // Buscar líneas que parezcan items de pedido
+        // Patrón: "1. Pizza Margarita x2 - $25.00" o "- Pizza Margarita x2"
+        const itemMatch = line.match(
+          /(?:\d+\.|[-•])\s*(.+?)\s*x(\d+)(?:\s*[-–]\s*\$?([\d,]+(?:\.\d{2})?))?/i,
+        );
+
+        if (itemMatch) {
+          const [, productName, quantity, price] = itemMatch;
+
+          items.push({
+            productName: productName.trim(),
+            quantity: parseInt(quantity),
+            unitPrice: price ? parseFloat(price.replace(',', '')) : undefined,
+          });
+        }
+      }
+
+      if (items.length === 0) {
+        // Método alternativo: buscar en formato más simple
+        const simplePattern = /(.+?)\s*x\s*(\d+)/gi;
+        let match;
+
+        while ((match = simplePattern.exec(assistantResponse)) !== null) {
+          const [, productName, quantity] = match;
+
+          items.push({
+            productName: productName.trim(),
+            quantity: parseInt(quantity),
+          });
+        }
+      }
+
+      return items.length > 0 ? { items } : null;
+    } catch (error) {
+      this.logger.error('Error extracting order data:', error);
+      return null;
+    }
+  }
+
+  /**
+   * **NUEVO: Procesar orden confirmada**
+   */
+  private async processConfirmedOrder(
+    customerPhone: string,
+    branchId: string,
+    orderData: any,
+    tableInfo: any,
+    threadId: string,
+  ): Promise<{
+    success: boolean;
+    order?: any;
+    message: string;
+    errors?: string[];
+  }> {
+    try {
+      // Determinar tipo de orden y mesa
+      let orderType: OrderType;
+      let tableId: string | null;
+
+      if (tableInfo?.validatedTable) {
+        orderType = OrderType.DINE_IN;
+        tableId = tableInfo.validatedTable.id;
+      }
+
+      // Preparar datos para OrderProcessingService
+      const confirmationData: OrderConfirmationData = {
+        customerPhone,
+        branchId,
+        tableId: tableId!,
+        orderType: orderType!,
+        items: orderData.items,
+        notes: orderData.notes,
+        assistantThreadId: threadId,
+      };
+
+      // Procesar la orden
+      const result =
+        await this.orderProcessingService.processOrderConfirmation(
+          confirmationData,
+        );
+
+      if (result.success) {
+        const message = this.buildOrderConfirmationMessage(result);
+
+        return {
+          success: true,
+          order: result.order,
+          message,
+        };
+      } else {
+        return {
+          success: false,
+          message: `❌ No pude procesar tu pedido: ${result.errors?.join(' ')}`,
+          errors: result.errors,
+        };
+      }
+    } catch (error) {
+      this.logger.error('Error processing confirmed order:', error);
+
+      return {
+        success: false,
+        message:
+          '❌ Hubo un error procesando tu pedido. Por favor intenta de nuevo.',
+        errors: [error.message],
+      };
+    }
+  }
+
+  /**
+   * **NUEVO: Construir mensaje de confirmación**
+   */
+  private buildOrderConfirmationMessage(result: any): string {
+    const order = result.order;
+    const items = result.orderItems;
+
+    let message = `✅ *¡Pedido confirmado!*\n\n`;
+    message += `📋 *Orden #${order.id.slice(-6)}*\n`;
+
+    if (order.tableId && order.table) {
+      message += `🪑 Mesa: ${order.table.name}\n`;
+    }
+
+    message += `\n🍽️ *Tu pedido:*\n`;
+    items.forEach((item, index) => {
+      message += `${index + 1}. ${item.product?.name || 'Producto'} x${item.quantity}`;
+      if (item.notes) {
+        message += ` (${item.notes})`;
+      }
+      message += ` - $${(item.unitPrice * item.quantity).toFixed(2)}\n`;
+    });
+
+    message += `\n💰 *Total: $${result.total.toFixed(2)}*\n\n`;
+    message += `⏰ Estado: ⏳ Pendiente\n`;
+    message += `🕐 Tiempo estimado: 15-20 minutos\n\n`;
+    message += `Te notificaremos cuando esté listo! 📲`;
+
+    return message;
   }
 }

@@ -103,7 +103,7 @@ export class WhatsappService {
       `Message directed to branch: ${branch.name} (${branch.phoneNumber})`,
     );
 
-    const tableInfo = await this.tableService.processTableMention(
+    let tableInfo = await this.tableService.processTableMention(
       messageData.message,
       branch.id,
     );
@@ -132,7 +132,7 @@ export class WhatsappService {
           customer.phone,
           messageData.message,
           customer.threadId,
-          tableInfo, // Pasar el threadId existente
+          tableInfo,
         );
 
         assistantResponse = assistantResult.response;

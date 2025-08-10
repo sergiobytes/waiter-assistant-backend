@@ -13,6 +13,7 @@ import { PaymentsModule } from './payments/payments.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { OpenAIModule } from './openai/openai.module';
+import { OrderProcessingModule } from './order-processing/order-processing.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { OpenAIModule } from './openai/openai.module';
     WebhooksModule,
     WhatsappModule,
     OpenAIModule,
+    OrderProcessingModule,
   ],
   controllers: [],
   providers: [],
