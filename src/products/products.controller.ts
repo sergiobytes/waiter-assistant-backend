@@ -16,6 +16,8 @@ import { UpdateProductDto } from './dto/update-product.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { pdfUploadOptions } from '../utils/pdf-upload';
 
+// Proteger rutas con autenticacion
+
 @Controller('products')
 export class ProductsController {
   constructor(private readonly productService: ProductsService) {}

@@ -12,6 +12,8 @@ import { RestaurantsService } from './restaurants.service';
 import { CreateRestaurantDto } from './dto/create-restaurant.dto';
 import { UpdateRestaurantDto } from './dto/update-restaurant.dto';
 
+// Proteger rutas con autenticacion
+
 @Controller('restaurants')
 export class RestaurantsController {
   constructor(private readonly restaurantService: RestaurantsService) {}

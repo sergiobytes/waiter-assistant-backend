@@ -12,6 +12,8 @@ import { BranchesService } from './branches.service';
 import { CreateBranchDto } from './dto/create-branch.dto';
 import { UpdateBranchDto } from './dto/update-branch.dto';
 
+// Proteger rutas con autenticacion
+
 @Controller('branches')
 export class BranchesController {
   constructor(private readonly brancheService: BranchesService) {}
