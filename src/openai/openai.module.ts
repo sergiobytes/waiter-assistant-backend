@@ -4,7 +4,7 @@ import { AssistantService } from './assistant.service';
 import { MenusModule } from '../menus/menus.module';
 import { ProductsModule } from '../products/products.module';
 import { OrdersModule } from '../orders/orders.module';
-import { OrderItemsModule } from 'src/order-items/order-items.module';
+import { OrderItemsModule } from '../order-items/order-items.module';
 
 @Module({
   imports: [
