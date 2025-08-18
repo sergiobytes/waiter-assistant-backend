@@ -1,11 +1,11 @@
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsString, IsUUID } from 'class-validator';
 
 export class CreateMenuDto {
   @IsString()
   @IsNotEmpty()
   name: string;
 
-  @IsString()
   @IsNotEmpty()
+  @IsUUID()
   branchId: string;
 }

@@ -23,6 +23,16 @@ export class CustomersService {
     });
   }
 
+  async findById(id: string): Promise<Customer> {
+    const customer = await this.customerRepo.findOne({
+      where: { id, isActive: true },
+    });
+
+    if (!customer) throw new NotFoundException('Customer not found');
+
+    return customer;
+  }
+
   async findByPhone(phone: string): Promise<Customer> {
     const customer = await this.customerRepo.findOne({
       where: { phone: phone, isActive: true },

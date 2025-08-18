@@ -1,6 +1,4 @@
 import {
-  IsEnum,
-  IsNotEmpty,
   IsOptional,
   IsString,
   ValidateNested,
@@ -8,34 +6,21 @@ import {
   IsUUID,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { CreateOrderItemDto } from '../../order-items/dto/create-order-item.dto';
-import { OrderStatus } from '../../common/enums/order-status.enum';
-import { OrderType } from '../../common/enums/order-type.enum';
+import { OrderItem } from '../../order-items/entities/order-item.entity';
 
 export class CreateOrderDto {
   @IsUUID()
   branchId: string;
 
-  @IsOptional()
   @IsUUID()
-  tableId?: string;
-
-  @IsString()
-  @IsNotEmpty()
-  customerPhone: string;
-
-  @IsEnum(OrderStatus)
-  status: OrderStatus;
+  customerId: string;
 
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => CreateOrderItemDto)
-  items: CreateOrderItemDto[];
+  @Type(() => OrderItem)
+  items: OrderItem[];
 
   @IsOptional()
   @IsString()
   notes?: string;
-
-  @IsEnum(OrderType)
-  type: OrderType;
 }

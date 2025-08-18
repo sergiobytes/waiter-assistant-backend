@@ -11,7 +11,11 @@ export class CreateBranchDto {
 
   @IsString()
   @IsNotEmpty()
-  phoneNumber: string;
+  phoneNumberAssistant: string;
+
+  @IsString()
+  @IsNotEmpty()
+  phoneNumberReception: string;
 
   @IsString()
   @IsNotEmpty()

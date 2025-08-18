@@ -18,9 +18,6 @@ async function bootstrap() {
     }),
   );
 
-  // Configurar raw body parser específicamente para webhooks de Stripe
-  app.use('/api/webhooks/stripe', bodyParser.raw({ type: 'application/json' }));
-  
   // Body parser para el resto de endpoints
   app.use(bodyParser.json({ limit: '10MB' }));
   app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));

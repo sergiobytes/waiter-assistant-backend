@@ -6,7 +6,6 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 
 import * as pdfParse from 'pdf-parse';
-import { ProductCategory } from '../common/enums/product-category.enum';
 import { normalizeText } from '../utils/normalize-text';
 
 @Injectable()
@@ -79,7 +78,6 @@ export class ProductsService {
           name,
           price,
           menuId,
-          category: ProductCategory.OTHER,
         });
       }
     });

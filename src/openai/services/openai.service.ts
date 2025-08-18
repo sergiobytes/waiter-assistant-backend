@@ -91,10 +91,6 @@ export class OpenAIService {
             return content.text.value;
           }
         }
-      } else if (runStatus.status === 'requires_action') {
-        // Manejar function calls si es necesario
-        this.logger.log('Assistant requires action - function calls needed');
-        return await this.handleFunctionCalls(threadId, run.id, runStatus);
       } else {
         this.logger.error(`Run failed with status: ${runStatus.status}`);
         throw new Error(`Assistant run failed: ${runStatus.status}`);
@@ -104,123 +100,6 @@ export class OpenAIService {
     } catch (error) {
       this.logger.error('Error communicating with OpenAI:', error);
       throw error;
-    }
-  }
-
-  /**
-   * Maneja las llamadas a funciones del asistente
-   */
-  private async handleFunctionCalls(
-    threadId: string,
-    runId: string,
-    runStatus: any,
-  ): Promise<string> {
-    const toolCalls = runStatus.required_action.submit_tool_outputs.tool_calls;
-    const toolOutputs: any[] = [];
-
-    for (const toolCall of toolCalls) {
-      const functionName = toolCall.function.name;
-      const functionArgs = JSON.parse(toolCall.function.arguments);
-
-      this.logger.log(
-        `Function call: ${functionName} with args: ${JSON.stringify(functionArgs)}`,
-      );
-
-      // Aquí es donde llamaremos a los servicios correspondientes
-      const output = await this.executeFunctionCall(functionName, functionArgs);
-
-      toolOutputs.push({
-        tool_call_id: toolCall.id,
-        output: JSON.stringify(output),
-      });
-    }
-
-    // Enviar los resultados de las funciones de vuelta al asistente
-    await this.openai.beta.threads.runs.submitToolOutputs(runId, {
-      thread_id: threadId,
-      tool_outputs: toolOutputs,
-    });
-
-    // Esperar a que el run se complete después de las function calls
-    let runStatus2 = await this.openai.beta.threads.runs.retrieve(runId, {
-      thread_id: threadId,
-    });
-
-    while (
-      runStatus2.status === 'in_progress' ||
-      runStatus2.status === 'queued'
-    ) {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      runStatus2 = await this.openai.beta.threads.runs.retrieve(runId, {
-        thread_id: threadId,
-      });
-    }
-
-    if (runStatus2.status === 'completed') {
-      const messages = await this.openai.beta.threads.messages.list(threadId);
-      const lastMessage = messages.data[0];
-
-      if (lastMessage.role === 'assistant') {
-        const content = lastMessage.content[0];
-        if (content.type === 'text') {
-          return content.text.value;
-        }
-      }
-    }
-
-    return 'Procesé tu solicitud correctamente.';
-  }
-
-  /**
-   * Ejecuta las funciones llamadas por el asistente
-   * Aquí es donde integramos con los servicios de la aplicación
-   */
-  private async executeFunctionCall(
-    functionName: string,
-    args: any,
-  ): Promise<any> {
-    this.logger.log(`Executing function: ${functionName}`);
-
-    try {
-      switch (functionName) {
-        case 'get_menu':
-          // Retorna información del menú
-          return await this.assistantService.getMenu(args.branchId);
-
-        case 'create_order':
-          // Crea una nueva orden
-          return await this.assistantService.createOrder(
-            args.customerPhone,
-            args.branchId,
-            args.tableNumber,
-          );
-
-        case 'get_order_status':
-          // Consulta el estado de una orden
-          return {
-            status: 'success',
-            message: 'Función get_order_status ejecutada',
-            data: args,
-          };
-
-        case 'add_item_to_order':
-          // Agrega items a una orden
-          return {
-            status: 'success',
-            message: 'Función add_item_to_order ejecutada',
-            data: args,
-          };
-
-        default:
-          this.logger.warn(`Unknown function: ${functionName}`);
-          return {
-            status: 'error',
-            message: `Función ${functionName} no reconocida`,
-          };
-      }
-    } catch (error) {
-      this.logger.error(`Error executing function ${functionName}:`, error);
-      return { status: 'error', message: error.message };
     }
   }
 }

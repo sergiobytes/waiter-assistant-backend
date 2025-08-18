@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { twilioConfig } from '../../config/twilio.config';
 import * as twilio from 'twilio';
+import { TwilioWebhookData } from '../models/twilio-webhook-data.response';
+import { MessageData } from '../models/message-data';
+import { MessageInstance } from 'twilio/lib/rest/api/v2010/account/message';
 
 @Injectable()
 export class TwilioService {
@@ -19,7 +22,11 @@ export class TwilioService {
   /**
    * Envía un mensaje de WhatsApp
    */
-  async sendWhatsAppMessage(to: string, message: string, from: string): Promise<any> {
+  async sendWhatsAppMessage(
+    to: string,
+    message: string,
+    from: string,
+  ): Promise<MessageInstance> {
     if (!this.client) {
       throw new Error('Twilio not configured');
     }
@@ -27,7 +34,9 @@ export class TwilioService {
     try {
       // Asegurar que el número tenga el formato correcto para WhatsApp
       const whatsappNumber = to.startsWith('whatsapp:') ? to : `whatsapp:${to}`;
-      const fromNumber = from.startsWith('whatsapp:') ? from : `whatsapp:${from}`;
+      const fromNumber = from.startsWith('whatsapp:')
+        ? from
+        : `whatsapp:${from}`;
 
       const messageResponse = await this.client.messages.create({
         body: message,
@@ -46,7 +55,7 @@ export class TwilioService {
   /**
    * Procesa un mensaje entrante de WhatsApp
    */
-  processIncomingMessage(webhookData: any) {
+  processIncomingMessage(webhookData: TwilioWebhookData): MessageData {
     const {
       From: from,
       To: to,
@@ -81,7 +90,7 @@ export class TwilioService {
         twilioConfig.authToken,
         signature,
         url,
-        params
+        params,
       );
     } catch (error) {
       this.logger.error('Error validating Twilio webhook:', error);

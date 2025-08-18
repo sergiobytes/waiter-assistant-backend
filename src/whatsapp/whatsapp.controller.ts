@@ -2,16 +2,12 @@ import {
   Controller,
   Post,
   Body,
-  Headers,
   HttpCode,
   HttpStatus,
   Logger,
-  BadRequestException,
-  Req,
 } from '@nestjs/common';
-import { Request } from 'express';
 import { WhatsappService } from './whatsapp.service';
-import { TwilioMessage } from './classes/twilio-message.class';
+import { TwilioWebhookData } from './models/twilio-webhook-data.response';
 
 @Controller('whatsapp')
 export class WhatsappController {
@@ -21,12 +17,7 @@ export class WhatsappController {
 
   @Post('webhook')
   @HttpCode(HttpStatus.OK)
-  async handleTwilioWebhook(@Body() body: any) {
+  async handleTwilioWebhook(@Body() body: TwilioWebhookData) {
     return this.whatsappService.handleTwilioWebhook(body);
-  }
-
-  @Post('send')
-  async sendMessage(@Body() body: TwilioMessage) {
-    return this.whatsappService.handleMessageSending(body);
   }
 }
