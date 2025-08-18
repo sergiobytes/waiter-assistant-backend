@@ -22,6 +22,9 @@ export class Branch extends BaseEntity {
   @Column({ nullable: true })
   qrUrl: string;
 
+  @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
+  balance: number;
+
   @ManyToOne(() => Restaurant, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'restaurantId' })
   restaurant: Restaurant;
