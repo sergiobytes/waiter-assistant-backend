@@ -16,12 +16,12 @@ import { splitMessages } from '../utils/split-messages';
 import { MessageInstance } from 'twilio/lib/rest/api/v2010/account/message';
 import { hasRequestedBill } from '../utils/has-requested-bill';
 import { extractOrderDataFromMessage } from '../utils/extract-order-data-from-message';
-import { Product } from '../products/entities/product.entity';
 import { CreateOrderItemDto } from '../order-items/dto/create-order-item.dto';
 import { CreateOrderDto } from '../orders/dto/create-order.dto';
 import { OrdersService } from '../orders/orders.service';
 import { OrderItemsService } from '../order-items/order-items.service';
 import { OrderItem } from '../order-items/entities/order-item.entity';
+import { findProductByName } from '../utils/find-products-by-name';
 
 @Injectable()
 export class WhatsappService {
@@ -294,8 +294,6 @@ export class WhatsappService {
     customerId: string,
     clientMessage: string,
   ) {
-    // Implementar lógica para guardar la orden en la base de datos
-
     const menuProducts = (await this.assistantService.getMenu(branchId)).data;
 
     if (!menuProducts) throw new NotFoundException('Menu products not found');
@@ -316,7 +314,11 @@ export class WhatsappService {
     const orderItems: Promise<OrderItem>[] = [];
 
     for (const item of parsedOrderData) {
-      const product = this.findProductByName(menuProducts, item.productName);
+      const product = findProductByName(
+        menuProducts,
+        item.productName,
+        this.logger,
+      );
 
       if (!product) {
         this.logger.error(`Product not found: "${item.productName}".`);
@@ -342,141 +344,5 @@ export class WhatsappService {
       total,
       items,
     });
-  }
-
-  /**
-   * Búsqueda mejorada de producto por nombre
-   */
-  private findProductByName(
-    products: Product[],
-    searchName: string,
-  ): Product | null {
-    const normalized = searchName.toLowerCase().trim();
-
-    this.logger.log(
-      `Searching for product: "${searchName}" in ${products.length} products`,
-    );
-
-    // 1. Búsqueda exacta
-    let found = products.find(
-      (p) => p.name.toLowerCase().trim() === normalized,
-    );
-
-    if (found) {
-      this.logger.log(`Found exact match: ${found.name}`);
-      return found;
-    }
-
-    // 2. Búsqueda por inclusión simple
-    found = products.find(
-      (p) =>
-        p.name.toLowerCase().includes(normalized) ||
-        normalized.includes(p.name.toLowerCase()),
-    );
-
-    if (found) {
-      this.logger.log(`Found by inclusion: ${found.name}`);
-      return found;
-    }
-
-    // 3. **NUEVO: Búsqueda específica para productos con variantes**
-    // Buscar en contenido de paréntesis: "Refrescos (Cola, fresa)" -> buscar "cola"
-    found = products.find((p) => {
-      const parenthesisMatch = p.name.match(/\(([^)]+)\)/);
-      if (parenthesisMatch) {
-        const variants = parenthesisMatch[1].toLowerCase();
-        // Dividir por comas y limpiar espacios
-        const variantList = variants.split(',').map((v) => v.trim());
-
-        // Verificar si el término buscado coincide con alguna variante
-        return variantList.some(
-          (variant) =>
-            variant.includes(normalized) ||
-            normalized.includes(variant) ||
-            this.similarityMatch(variant, normalized),
-        );
-      }
-      return false;
-    });
-
-    if (found) {
-      this.logger.log(`Found by variant match: ${found.name}`);
-      return found;
-    }
-
-    // 4. **NUEVO: Búsqueda por palabras clave mejorada**
-    const searchWords = normalized.split(' ').filter((word) => word.length > 2);
-
-    found = products.find((p) => {
-      const productText = p.name.toLowerCase();
-
-      // Verificar si alguna palabra clave coincide
-      return searchWords.some((word) => {
-        // Buscar en el nombre principal
-        if (productText.includes(word)) return true;
-
-        // Buscar en las variantes (contenido de paréntesis)
-        const parenthesisMatch = p.name.match(/\(([^)]+)\)/);
-        if (parenthesisMatch) {
-          const variants = parenthesisMatch[1].toLowerCase();
-          return variants.includes(word);
-        }
-
-        return false;
-      });
-    });
-
-    if (found) {
-      this.logger.log(`Found by keyword match: ${found.name}`);
-      return found;
-    }
-
-    // 5. **NUEVO: Mapeo de sinónimos comunes**
-    const synonymMap = {
-      refresco: ['refrescos', 'bebida', 'soda'],
-      cola: ['coca', 'cocacola', 'coca cola', 'pepsi'],
-      fresa: ['strawberry', 'frutilla'],
-      toronja: ['pomelo', 'grapefruit'],
-      torta: ['sandwich', 'sándwich', 'emparedado'],
-      jamón: ['jamon', 'ham'],
-    };
-
-    for (const [key, synonyms] of Object.entries(synonymMap)) {
-      if (
-        normalized.includes(key) ||
-        synonyms.some((syn) => normalized.includes(syn))
-      ) {
-        found = products.find((p) => {
-          const productText = p.name.toLowerCase();
-          return (
-            productText.includes(key) ||
-            synonyms.some((syn) => productText.includes(syn))
-          );
-        });
-
-        if (found) {
-          this.logger.log(`Found by synonym match (${key}): ${found.name}`);
-          return found;
-        }
-      }
-    }
-
-    this.logger.warn(`No product found for: "${searchName}"`);
-    return null;
-  }
-
-  private similarityMatch(str1: string, str2: string): boolean {
-    // Implementación simple de similitud
-    const minLength = Math.min(str1.length, str2.length);
-    const maxLength = Math.max(str1.length, str2.length);
-
-    if (minLength < 3) return false; // Muy corto para comparar
-
-    // Si una string está contenida en la otra y tiene al menos 70% de similitud
-    if (minLength / maxLength >= 0.7) {
-      return str1.includes(str2) || str2.includes(str1);
-    }
-
-    return false;
   }
 }
