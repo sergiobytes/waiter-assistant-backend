@@ -15,7 +15,7 @@ export class CreateBranchDto {
 
   @IsString()
   @IsNotEmpty()
-  phoneNumberReception: string;
+  phoneNumberCashier: string;
 
   @IsString()
   @IsNotEmpty()

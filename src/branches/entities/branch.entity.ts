@@ -14,7 +14,7 @@ export class Branch extends BaseEntity {
   phoneNumberAssistant: string;
 
   @Column()
-  phoneNumberReception: string;
+  phoneNumberCashier: string;
 
   @Column({ nullable: true })
   assistantId: string;

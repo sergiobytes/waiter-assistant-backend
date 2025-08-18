@@ -87,7 +87,7 @@ export class WhatsappService {
     );
 
     const isAdmin =
-      messageData.from === branch.phoneNumberReception ? true : false;
+      messageData.from === branch.phoneNumberCashier ? true : false;
 
     // Verificar si el usuario existe en la base de datos
     const customer = await this.findOrCreateCustomer(
@@ -152,7 +152,7 @@ export class WhatsappService {
           for (const block of cashier) {
             messages.push(
               this.sendMessage(
-                branch.phoneNumberReception,
+                branch.phoneNumberCashier,
                 block,
                 branch.phoneNumberAssistant,
               ),
