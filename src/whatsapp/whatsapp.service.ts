@@ -82,6 +82,15 @@ export class WhatsappService {
       };
     }
 
+    if (branch.balance === 0) {
+      this.logger.warn(`Branch ${branch.name} has no balance`);
+      return {
+        error: 'Branch has no balance',
+        message: messageData,
+        processed: false,
+      };
+    }
+
     this.logger.log(
       `Message directed to branch: ${branch.name} (${branch.phoneNumberAssistant})`,
     );
