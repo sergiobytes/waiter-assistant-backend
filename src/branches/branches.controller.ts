@@ -11,10 +11,11 @@ import {
 import { BranchesService } from './branches.service';
 import { CreateBranchDto } from './dto/create-branch.dto';
 import { UpdateBranchDto } from './dto/update-branch.dto';
-
-// Proteger rutas con autenticacion
+import { Auth } from '../auth/decorators/auth.decorator';
+import { UserRoles } from '../auth/enums/user-valid-roles';
 
 @Controller('branches')
+@Auth([UserRoles.ADMIN])
 export class BranchesController {
   constructor(private readonly brancheService: BranchesService) {}
 

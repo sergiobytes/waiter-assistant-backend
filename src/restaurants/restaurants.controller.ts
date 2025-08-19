@@ -11,10 +11,11 @@ import {
 import { RestaurantsService } from './restaurants.service';
 import { CreateRestaurantDto } from './dto/create-restaurant.dto';
 import { UpdateRestaurantDto } from './dto/update-restaurant.dto';
-
-// Proteger rutas con autenticacion
+import { Auth } from '../auth/decorators/auth.decorator';
+import { UserRoles } from '../auth/enums/user-valid-roles';
 
 @Controller('restaurants')
+@Auth([UserRoles.ADMIN])
 export class RestaurantsController {
   constructor(private readonly restaurantService: RestaurantsService) {}
 
