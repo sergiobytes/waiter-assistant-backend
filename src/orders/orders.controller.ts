@@ -12,10 +12,11 @@ import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { Order } from './entities/order.entity';
-
-// Proteger rutas con autenticacion
+import { Auth } from '../auth/decorators/auth.decorator';
+import { UserRoles } from '../auth/enums/user-valid-roles';
 
 @Controller('orders')
+@Auth([UserRoles.ADMIN])
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 

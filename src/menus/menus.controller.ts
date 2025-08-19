@@ -11,10 +11,11 @@ import {
 import { MenusService } from './menus.service';
 import { CreateMenuDto } from './dto/create-menu.dto';
 import { UpdateMenuDto } from './dto/update-menu.dto';
-
-// Proteger rutas con autenticacion
+import { Auth } from '../auth/decorators/auth.decorator';
+import { UserRoles } from 'src/auth/enums/user-valid-roles';
 
 @Controller('menus')
+@Auth([UserRoles.ADMIN])
 export class MenusController {
   constructor(private readonly menuService: MenusService) {}
 

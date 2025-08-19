@@ -10,6 +10,10 @@ import { OrdersModule } from './orders/orders.module';
 import { OrderItemsModule } from './order-items/order-items.module';
 import { OpenAIModule } from './openai/openai.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
+import { AuthModule } from './auth/auth.module';
+import { CustomJwtModule } from './custom-jwt/custom-jwt.module';
+import { CustomPassportModule } from './custom-passport/custom-passport.module';
+import { CustomThrottlerModule } from './custom-throttler/custom-throttler.module';
 
 @Module({
   imports: [
@@ -24,6 +28,10 @@ import { WhatsappModule } from './whatsapp/whatsapp.module';
     OrderItemsModule,
     OpenAIModule,
     WhatsappModule,
+    AuthModule,
+    CustomJwtModule,
+    CustomPassportModule,
+    CustomThrottlerModule,
   ],
   controllers: [],
   providers: [],

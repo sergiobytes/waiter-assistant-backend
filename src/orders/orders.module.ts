@@ -7,10 +7,11 @@ import { BranchesModule } from '../branches/branches.module';
 import { CustomersModule } from '../customers/customers.module';
 import { ProductsModule } from '../products/products.module';
 import { OrderItemsModule } from '../order-items/order-items.module';
+import { JwtService } from '@nestjs/jwt';
 
 @Module({
   controllers: [OrdersController],
-  providers: [OrdersService],
+  providers: [OrdersService, JwtService],
   imports: [
     TypeOrmModule.forFeature([Order]),
     BranchesModule,
