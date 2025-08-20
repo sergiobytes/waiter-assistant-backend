@@ -185,6 +185,10 @@ export class WhatsappService {
           );
         }
 
+        // Aqui se tomaria en cuenta la baja del saldo
+
+        // balance = mensajes -1
+
         this.logger.log(`Assistant response sent to ${customer.name}`);
       } catch (error) {
         this.logger.error('Error processing message with assistant:', error);
